@@ -1,6 +1,7 @@
 
 mod tokenizer;
 mod ast;
+mod env;
 #[cfg(test)]
 mod tests {
     #[test]
@@ -18,6 +19,7 @@ mod tests {
     fn test_ast() {
         use super::ast;
         use super::tokenizer;;
+        use super::env;
 		let g = tokenizer::parse_string(&"(+ a)".to_string());
         let mut start_i: usize = 0;
         let m = ast::make_ast(&g, &mut start_i);
@@ -34,6 +36,7 @@ mod tests {
         let ast_vec2 = q.unwrap();
         assert_eq!(ast::SExpType::Identifier("a".to_string())
                    ,ast_vec2);
+        assert_eq!(env::interpret(ast_vec2, "a".to_string()));
 
     }
 
