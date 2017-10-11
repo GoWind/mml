@@ -28,6 +28,7 @@ mod tests {
         assert_eq!(ast::SExpType::Exp(vec![ast::SExpType::Identifier("+".to_string()),
                          ast::SExpType::Identifier("a".to_string())])
                     ,ast_vec);
+        assert_eq!(ast_vec.to_string(), "( + a)");
         let p = tokenizer::parse_string(&"a".to_string());
         assert_eq!(p.len() !=0, true);
         start_i = 0;
@@ -36,9 +37,9 @@ mod tests {
         let ast_vec2 = q.unwrap();
         assert_eq!(ast::SExpType::Identifier("a".to_string())
                    ,ast_vec2);
-        assert_eq!(env::interpret(ast_vec2, "a".to_string()));
+ //       assert_eq!(env::interpret(ast_vec2, "a".to_string()));
 
     }
-
+    
 }
 

@@ -12,7 +12,7 @@ static keywords: [&str; 6] =  ["define", "car", "cdr", "lambda", "nil", "empty-l
 
 
 
-
+/*
 pub fn interpret(forms: &Vec<ast::SExpType>) -> String {
 
     let mut k :usize = 0;
@@ -27,3 +27,4 @@ pub fn interpret(forms: &Vec<ast::SExpType>) -> String {
     }
     g
 }
+*/
