@@ -1,5 +1,6 @@
 use ast;
 use std::collections::HashMap;
+use std::option;
 pub enum IType {
         Atom(String),
         Function,
@@ -9,29 +10,39 @@ pub enum IType {
         Nil
 }
 
+pub enum Var {
+    Bound(IType),
+    Unbound
+}
+
 
 
 
 static keywords: [&str; 6] =  ["define", "car", "cdr", "lambda", "nil", "empty-list"];
 
 
-pub fn interpret(env: &mut HashMap<String, IType>, form: ast::SExpType) -> HashMap<String, IType> {
-    HashMap::new()
+pub fn is_define(exp:  &ast::SExpType) -> bool {
+    match exp {
+        &ast::SExpType::Exp(ref form)  => {
+            match &form[0] {
+                &ast::SExpType::Identifier(ref name) => { *name == "define".to_string()}
+                _ => { false}
+            }
+        }
+        _ => {false}
+    }
 }
 
-/*
-pub fn interpret(forms: &Vec<ast::SExpType>) -> String {
-
-    let mut k :usize = 0;
-    while k < forms.len() {
-
-     let mut g =   match &forms[k] {
-            ast::SExpType::Identifier(ref s) => {s.clone()}
-            _ => {"not implemented yet".to_string()}
-
+pub fn is_car(exp : &ast::SExpType) -> bool {
+    match exp {
+        &ast::SExpType::Exp(ref form)  => {
+            match &form[0] {
+                &ast::SExpType::Identifier(ref name) => { *name == "car".to_string()}
+                _ => { false}
+            }
+        }
+        _ => {false}
     }
-    k += 1;
-    }
-    g
 }
-*/
+
+
