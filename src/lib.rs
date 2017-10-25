@@ -22,7 +22,7 @@ mod tests {
         use super::env;
 		let g = tokenizer::parse_string(&"(+ a)".to_string());
         let mut start_i: usize = 0;
-        let m = ast::make_ast(&g, &mut start_i);
+        let m = ast::stream_to_ast(&g);
         assert_eq!(m.is_some(), true);
         let ast_vec = m.unwrap();
         assert_eq!(ast::SExpType::Exp(vec![ast::SExpType::Identifier("+".to_string()),
@@ -31,12 +31,18 @@ mod tests {
         assert_eq!(ast_vec.to_string(), "( + a)");
         let p = tokenizer::parse_string(&"a".to_string());
         assert_eq!(p.len() !=0, true);
-        start_i = 0;
-        let q = ast::make_ast(&p, &mut start_i);
+        let q = ast::stream_to_ast(&p);
         assert_eq!(q.is_some(), true);
         let ast_vec2 = q.unwrap();
         assert_eq!(ast::SExpType::Identifier("a".to_string())
                    ,ast_vec2);
+
+        let token_vec3 = tokenizer::parse_string(&"(+ a) (+ c d)".to_string());
+        let ast_vec3 = ast::stream_to_ast(&token_vec3);
+        let av3 = ast_vec3.unwrap();
+        assert_eq!(ast::SExpType::Exp(vec![ast::SExpType::Identifier("+".to_string()),
+                                           ast::SExpType::Identifier("a".to_string())]),
+                  av3);
 
     }
 
@@ -46,12 +52,14 @@ mod tests {
         use super::tokenizer;
         use super::env;
         let define_form = tokenizer::parse_string(&"(define a nil)".to_string());
-        let mut start_i: usize = 0;
-        let m  = ast::make_ast(&define_form, &mut start_i);
+        let m  = ast::stream_to_ast(&define_form);
         assert_eq!(m.is_some(), true);
         let p = m.unwrap();
         assert_eq!(env::is_define(&p), true);
         assert_eq!(env::is_car(&p), false);
+        let lambda_form = tokenizer::parse_string(&"(lambda (k x) (+ k x))".to_string());
+        let g = ast::stream_to_ast(&lambda_form).unwrap();
+        assert_eq!(env::is_lambda(&g), true);
                           
     } 
 }

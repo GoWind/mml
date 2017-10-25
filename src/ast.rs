@@ -22,6 +22,12 @@ impl fmt::Display for SExpType {
     }
 }
 
+
+pub fn stream_to_ast(tokenv: &Vec<tokenizer::TokenType>) -> Option<SExpType> {
+    let mut index: usize = 0;
+    make_ast(tokenv, &mut index)
+}
+
 pub fn make_ast(tokenv: &Vec<tokenizer::TokenType>, sindex: &mut usize) -> Option<SExpType> {
     if tokenv.len() == 0 {
         None
