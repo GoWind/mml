@@ -1,4 +1,5 @@
 use ast;
+use tokenizer;
 use std::collections::HashMap;
 use std::option;
 use std::result;
@@ -78,3 +79,24 @@ pub fn eval<'a>(env: &'a mut HashMap<String, Var>, exp: &ast::SExpType) -> Resul
 }
 
 
+#[cfg(test)]
+
+mod tests {
+    use env;
+    use ast;
+    use tokenizer;
+    #[test]
+    fn test_env() {
+        let mut env = env::HashMap::new();
+        env.insert("a".to_string(), env::Var::Bound(env::IType::Atom(":hohoho".to_string())));
+        let tok_stream = tokenizer::parse_string(&"a".to_string());
+        let ast = ast::stream_to_ast(&tok_stream).unwrap();
+        let val = env::eval(&mut env, &ast);
+        assert_eq!(val.is_ok(), true);
+
+
+
+        
+
+    }
+}
