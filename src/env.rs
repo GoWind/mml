@@ -16,7 +16,6 @@ pub enum IType {
 }
 
 
-
 pub fn create_env() -> HashMap<String, IType> {
     let mut k =  HashMap::new();
     k
@@ -82,7 +81,12 @@ pub fn eval<'a>(env: &'a mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) ->
                 }
             }
         }
-        ast::SExpType::Exp(ref n) => { Err("not impelemented yet")}
+        ast::SExpType::Exp(ref n) => { match get_first_term(&n[0]).as_ref()  {
+                                          "define" => { Err("define not implemented yet")}
+                                          "list"   => {Err("list not implemented yet")}
+                                          _ => {Err("not implemented yet")}
+                                        }
+                                      }
     }
 }
 
@@ -98,6 +102,7 @@ mod tests {
     fn test_env() {
         let mut env = env::HashMap::new();
         env.insert("a".to_string(), Rc::new(env::IType::Atom(":hohoho".to_string())));
+        env.insert(String::from("True"), Rc::new(env::IType::True));
         {
         let tok_stream = tokenizer::parse_string(&"a".to_string());
         let ast = ast::stream_to_ast(&tok_stream).unwrap();
