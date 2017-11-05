@@ -29,6 +29,23 @@ pub fn is_symbol(exp: &ast::SExpType) -> bool {
     }
 }
 
+
+pub fn truthy(st: &String) -> bool {
+    match st.as_ref() {
+        "True" => { true}
+        "False" => { true}
+        _ => {false}
+    }
+    
+}
+
+pub fn is_nil(st: &String) -> bool {
+    match st.as_ref() {
+        "Nil" => {true}
+        _ => {false}
+    }
+}
+
 pub fn is_atom(exp: &String) -> bool {
     exp.char_indices().count() > 1 && exp.chars().next() == Some(':')
 }
@@ -141,9 +158,12 @@ mod tests {
         println!("output is {:?}", val2);
         assert_eq!(true, env::is_atom(&String::from(":a")));
         assert_eq!(true, val2.is_ok());
-
+        assert_eq!(true, env::truthy(&String::from("True")));
+        assert_eq!(true, env::truthy(&String::from("False")));
+        assert_eq!(false, env::truthy(&String::from("Frue")));
 
 
 
     }
+
 }
