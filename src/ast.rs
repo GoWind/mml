@@ -1,6 +1,7 @@
 use tokenizer;
 use std::option;
 use std::fmt;
+use std::result;
 use std::string;
 #[derive(Debug, PartialEq, Eq)]
 pub enum SExpType {
@@ -23,24 +24,24 @@ impl fmt::Display for SExpType {
 }
 
 
-pub fn stream_to_ast(tokenv: &Vec<tokenizer::TokenType>) -> Option<SExpType> {
+pub fn stream_to_ast(tokenv: &Vec<tokenizer::TokenType>) -> Result<SExpType, &'static str> {
     let mut index: usize = 0;
     make_ast(tokenv, &mut index)
 }
 
-pub fn make_ast(tokenv: &Vec<tokenizer::TokenType>, sindex: &mut usize) -> Option<SExpType> {
+pub fn make_ast(tokenv: &Vec<tokenizer::TokenType>, sindex: &mut usize) -> Result<SExpType, &'static str> {
     if tokenv.len() == 0 {
-        None
+        Err("token stream is empty")
     } else {
         let mut current_index = *sindex;
         let mut k: Vec<SExpType>  = Vec::new();
         let mut parsing_sexp  = false;
         let mut exp_parsed = false;
         let mut found_exp = false;
-        let mut identifier_only  = Option::None;
+        let mut identifier_only  = Ok(SExpType::Identifier("".to_string()));;
         let mut exp_vec = Vec::new();
         if current_index == tokenv.len() {
-            return Option::None;
+            return Err("reached end of token stream")
         }
 
         while current_index < tokenv.len() {
@@ -51,10 +52,10 @@ pub fn make_ast(tokenv: &Vec<tokenizer::TokenType>, sindex: &mut usize) -> Optio
                 } else {
                     let  m = make_ast(tokenv, &mut current_index);
                     match m {
-                        Some(sub_exp) => {
+                        Ok(sub_exp) => {
                             exp_vec.push(sub_exp);
                         }
-                        None => {panic!("empty expression found")}
+                        _ => {}
                     }
                 }
                 }
@@ -62,7 +63,9 @@ pub fn make_ast(tokenv: &Vec<tokenizer::TokenType>, sindex: &mut usize) -> Optio
                     panic!("found a closing brace without an opening brace at index {}", current_index)
                 }
                 if exp_vec.is_empty() {
-                    panic!("found a empty expression at index {}", current_index)
+                   // let error_string = format!("found a empty expression at index {}", current_index);
+                    
+                    //Err(error_string.as_ref())
                 } else {
                     exp_parsed = true;
                     break;
@@ -73,7 +76,7 @@ pub fn make_ast(tokenv: &Vec<tokenizer::TokenType>, sindex: &mut usize) -> Optio
                     if parsing_sexp {
                         exp_vec.push(SExpType::Identifier(s.clone()))
                     } else {
-                        identifier_only = Some(SExpType::Identifier(s.clone()))
+                        identifier_only = Ok(SExpType::Identifier(s.clone()))
                     }
                 }
 
@@ -82,10 +85,10 @@ pub fn make_ast(tokenv: &Vec<tokenizer::TokenType>, sindex: &mut usize) -> Optio
             current_index += 1;
         }
         if found_exp && !exp_parsed {
-            panic!("reached end of token stream before parsing exp")
+         //   Err("reached end of toke nstream before parsing exp")
         }
         if parsing_sexp {
-            Some(SExpType::Exp(exp_vec))
+            Ok(SExpType::Exp(exp_vec))
         } else {
             identifier_only
         }
