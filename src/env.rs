@@ -7,12 +7,12 @@ use std::rc::Rc;
 
 #[derive(Debug)]
 pub enum IType {
-        Atom(String),
-        Function,
-        List(Vec<IType>),
-        True,
-        False,
-        Nil
+    Atom(String),
+    Function,
+    List(Vec<IType>),
+    True,
+    False,
+    Nil
 }
 
 
@@ -21,6 +21,13 @@ pub fn create_env() -> HashMap<String, IType> {
     k
 }
 
+
+pub fn is_symbol(exp: &ast::SExpType) -> bool {
+    match exp {
+        &ast::SExpType::Identifier(ref n) => { !is_atom(n)}
+        _ => {false}
+    }
+}
 
 pub fn is_atom(exp: &String) -> bool {
     exp.char_indices().count() > 1 && exp.chars().next() == Some(':')
@@ -58,7 +65,7 @@ pub fn get_first_term(exp: &ast::SExpType) -> String {
                 _ => { "".to_string()}
             }
         }
-        _ => { "".to_string()}
+        ast::SExpType::Identifier(ref n) => { n.clone()}
     }
 }
 
@@ -82,11 +89,30 @@ pub fn eval<'a>(env: &'a mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) ->
             }
         }
         ast::SExpType::Exp(ref n) => { match get_first_term(&n[0]).as_ref()  {
-                                          "define" => { Err("define not implemented yet")}
-                                          "list"   => {Err("list not implemented yet")}
-                                          _ => {Err("not implemented yet")}
-                                        }
-                                      }
+            "define" => {  if n.len() != 3 {
+                Err("incorrect number of arguments to define")
+            } else {
+                let symbol = &n[2];
+                if ! is_symbol(symbol) {
+                    Err("not a symbol")
+                } else {
+                    let val = eval(env, &n[2]);
+                    match val {
+                        Ok(s) => { env.insert(get_first_term(&n[1]).clone(), s);
+                            Ok(Rc::new(IType::Nil))
+                        }
+                        Err(s) => { Err(s)}
+                    }
+                }
+            }
+
+            }
+
+
+            "list"   => {Err("list not implemented yet")}
+            _ => {Err("not implemented yet")}
+        }
+        }
     }
 }
 
@@ -104,10 +130,10 @@ mod tests {
         env.insert("a".to_string(), Rc::new(env::IType::Atom(":hohoho".to_string())));
         env.insert(String::from("True"), Rc::new(env::IType::True));
         {
-        let tok_stream = tokenizer::parse_string(&"a".to_string());
-        let ast = ast::stream_to_ast(&tok_stream).unwrap();
-        let val = env::eval(&mut env, &ast);
-        assert_eq!(val.is_ok(), true);
+            let tok_stream = tokenizer::parse_string(&"a".to_string());
+            let ast = ast::stream_to_ast(&tok_stream).unwrap();
+            let val = env::eval(&mut env, &ast);
+            assert_eq!(val.is_ok(), true);
         }
         let tok_stream2 = tokenizer::parse_string(&":a".to_string());
         let ast2 = ast::stream_to_ast(&tok_stream2).unwrap();
@@ -117,7 +143,7 @@ mod tests {
         assert_eq!(true, val2.is_ok());
 
 
-        
+
 
     }
 }
