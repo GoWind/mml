@@ -15,6 +15,20 @@ pub enum IType {
     Nil
 }
 
+// use this for quote
+pub fn ast_to_list(ast: &ast::SExpType) -> IType {
+    match ast {
+        &ast::SExpType::Identifier(ref name) => {IType::Atom(name.clone())}
+        &ast::SExpType::Exp(ref v) => { let mut iv = Vec::new();
+                                        for j in v {
+                                            iv.push(ast_to_list(&j));
+                                        }
+                                        IType::List(iv)
+        }
+
+    }
+}
+
 
 pub fn create_env() -> HashMap<String, IType> {
     let mut k =  HashMap::new();
