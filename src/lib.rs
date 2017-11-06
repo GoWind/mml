@@ -23,7 +23,7 @@ mod tests {
 		let g = tokenizer::parse_string(&"(+ a)".to_string());
         let mut start_i: usize = 0;
         let m = ast::stream_to_ast(&g);
-        assert_eq!(m.is_some(), true);
+        assert_eq!(m.is_ok(), true);
         let ast_vec = m.unwrap();
         assert_eq!(ast::SExpType::Exp(vec![ast::SExpType::Identifier("+".to_string()),
                          ast::SExpType::Identifier("a".to_string())])
@@ -32,7 +32,7 @@ mod tests {
         let p = tokenizer::parse_string(&"a".to_string());
         assert_eq!(p.len() !=0, true);
         let q = ast::stream_to_ast(&p);
-        assert_eq!(q.is_some(), true);
+        assert_eq!(q.is_ok(), true);
         let ast_vec2 = q.unwrap();
         assert_eq!(ast::SExpType::Identifier("a".to_string())
                    ,ast_vec2);
@@ -53,7 +53,13 @@ mod tests {
         use super::env;
         let define_form = tokenizer::parse_string(&"(define a nil)".to_string());
         let m  = ast::stream_to_ast(&define_form);
-        assert_eq!(m.is_some(), true);
+        assert_eq!(m.is_ok(), true);
+        let empty_form  = tokenizer::parse_string(&"".to_string());
+        let empty_m = ast::stream_to_ast(&empty_form);
+        assert_eq!(empty_m.is_err(), true);
+        let define_bad_form = tokenizer::parse_string(&"(define a ())".to_string());
+        let mb = ast::stream_to_ast(&define_bad_form);
+        assert_eq!(mb.is_err(), true);
         let p = m.unwrap();
         assert_eq!(env::is_define(&p), true);
         assert_eq!(env::is_car(&p), false);
