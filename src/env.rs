@@ -5,7 +5,7 @@ use std::option;
 use std::result;
 use std::rc::Rc;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum IType {
     Atom(String),
     Function,
@@ -99,7 +99,7 @@ pub fn eval<'a>(env: &'a mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) ->
             } else {
                 // see if the variable is define
                 if env.contains_key(name) {
-                    Ok(env.get(name).unwrap().clone())
+                    Ok(Rc::clone(env.get(name).unwrap()))
                 } else {
                     Err("undefined variable")
                 }
@@ -109,31 +109,29 @@ pub fn eval<'a>(env: &'a mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) ->
             "define" => {  if n.len() != 3 {
                 Err("incorrect number of arguments to define")
             } else {
-                let symbol = &n[2];
+                let symbol = &n[1];
                 if ! is_symbol(symbol) {
                     Err("not a symbol")
                 } else {
                     let val = eval(env, &n[2]);
                     match val {
-                        Ok(s) => { env.insert(get_first_term(&n[1]).clone(), s);
+                        Ok(s) => { 
+                            env.insert(get_first_term(&n[1]).clone(), s);
                             Ok(Rc::new(IType::Nil))
                         }
-                        Err(s) => { Err(s)}
+                        Err(msg) => { Err(msg)}
                     }
                 }
+                }
             }
-
-            }
-
 
             "list"   => {Err("list not implemented yet")}
             _ => {Err("not implemented yet")}
         }
         }
     }
+
 }
-
-
 #[cfg(test)]
 
 mod tests {
@@ -155,12 +153,22 @@ mod tests {
         let tok_stream2 = tokenizer::parse_string(&":a".to_string());
         let ast2 = ast::stream_to_ast(&tok_stream2).unwrap();
         let val2 = env::eval(&mut env, &ast2);
-        println!("output is {:?}", val2);
         assert_eq!(true, env::is_atom(&String::from(":a")));
         assert_eq!(true, val2.is_ok());
         assert_eq!(true, env::truthy(&String::from("True")));
         assert_eq!(true, env::truthy(&String::from("False")));
         assert_eq!(false, env::truthy(&String::from("Frue")));
+        let tok_stream_3 = tokenizer::parse_string(&"(define a :b)".to_string());
+        let ast3 = ast::stream_to_ast(&tok_stream_3).unwrap();
+        let v = env::eval(&mut env, &ast3);
+        assert_eq!(Rc::try_unwrap(v.unwrap()), Ok(env::IType::Nil));
+        let tok_stream_4 = tokenizer::parse_string(&"a".to_string());
+        let ast4 = ast::stream_to_ast(&tok_stream_4).unwrap();
+        let v = env::eval(&mut env, &ast4);
+        assert_eq!(true, match v {
+                            Ok(s) => { assert_eq!(*s, env::IType::Atom(":b".to_string())); true}
+                            Err(g) =>{ false}
+        });
 
 
 
