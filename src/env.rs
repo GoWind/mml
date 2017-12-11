@@ -10,6 +10,7 @@ pub enum IType {
     Atom(String),
     Function,
     List(Vec<IType>),
+    QuotedList(ast::SExpType),
     True,
     False,
     Nil
@@ -24,7 +25,7 @@ pub fn ast_to_list(ast: &ast::SExpType) -> IType {
                                             iv.push(ast_to_list(&j));
                                         }
                                         IType::List(iv)
-        }
+                                     }
 
     }
 }
@@ -64,8 +65,8 @@ pub fn is_atom(exp: &String) -> bool {
     exp.char_indices().count() > 1 && exp.chars().next() == Some(':')
 }
 
-pub fn is_define(exp:  &ast::SExpType) -> bool {
-    get_first_term(exp) == "define"
+pub fn is_quote(exp : &ast::SExpType) -> bool {
+    get_first_term(exp) == "quote"
 }
 
 pub fn is_car(exp : &ast::SExpType) -> bool {
@@ -119,25 +120,35 @@ pub fn eval<'a>(env: &'a mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) ->
                 }
             }
         }
-        ast::SExpType::Exp(ref n) => { match get_first_term(&n[0]).as_ref()  {
-            "define" => {  if n.len() != 3 {
-                Err("incorrect number of arguments to define")
-            } else {
-                let symbol = &n[1];
-                if ! is_symbol(symbol) {
-                    Err("not a symbol")
-                } else {
-                    let val = eval(env, &n[2]);
-                    match val {
-                        Ok(s) => { 
-                            env.insert(get_first_term(&n[1]).clone(), s);
-                            Ok(Rc::new(IType::Nil))
+        ast::SExpType::Exp(ref n) => { 
+            match get_first_term(&n[0]).as_ref()  {
+            "quote" => {  if n.len() != 2 {
+                                   Err("incorrect number of arguments to quote. should be (quote sexp)")
+                            } else {
+                                Ok(Rc::new(IType::QuotedList(n[1])))
+                            }
+                          
+                       } // end of quote interpretation
+
+            "cons" => {
+                        if n.len() != 3 {
+                            Err("incorrect number of arguments to cons")
+                        } else {   // figure out the type of item of item and the list
+                            let item = eval(env, &n[1]);
+                            let list = eval(env, &n[2]);
+                            match item {
+                                Ok(ref i) => match list {
+                                                Ok(ref l) => { let mut v= Vec::new();
+                                                               v.add(i);
+                                                               v.add(l);
+                                                               Ok(Rc::new(v))
+                                                             }
+                                                _ => { Err("invalid list")}
+                                             }
+                                _ => { Err("invalid item") }
+                            }
                         }
-                        Err(msg) => { Err(msg)}
-                    }
-                }
-                }
-            }
+                      } // end of cons interpretation
 
             "list"   => {Err("list not implemented yet")}
             _ => {Err("not implemented yet")}
