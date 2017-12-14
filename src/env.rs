@@ -125,7 +125,7 @@ pub fn eval<'a>(env: &'a mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) ->
             "quote" => {  if n.len() != 2 {
                                    Err("incorrect number of arguments to quote. should be (quote sexp)")
                             } else {
-                                Ok(Rc::new(IType::QuotedList(n[1])))
+                                Ok(Rc::new(IType::QuotedList(n[1].clone())))
                             }
                           
                        } // end of quote interpretation
@@ -135,17 +135,19 @@ pub fn eval<'a>(env: &'a mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) ->
                             Err("incorrect number of arguments to cons")
                         } else {   // figure out the type of item of item and the list
                             let item = eval(env, &n[1]);
-                            let list = eval(env, &n[2]);
                             match item {
-                                Ok(ref i) => match list {
-                                                Ok(ref l) => { let mut v= Vec::new();
-                                                               v.add(i);
-                                                               v.add(l);
-                                                               Ok(Rc::new(v))
-                                                             }
-                                                _ => { Err("invalid list")}
-                                             }
-                                _ => { Err("invalid item") }
+                                Ok(ref i) =>  {
+                                                  let list = eval(env, &n[2]);
+                                                  match list {
+                                                     Ok(ref l) => {  let mut cons_list = Vec::new();
+                                                                     cons_list.push(i);
+                                                                     cons_list.push(l);
+                                                                     Ok(Rc::new(IType::List(vec![*i, l])))
+                                                                  }
+                                                    Err(k) => { Err(k) }
+                                                 }
+                                              }
+                                Err(k) => { Err(k) }
                             }
                         }
                       } // end of cons interpretation

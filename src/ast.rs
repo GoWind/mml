@@ -3,7 +3,7 @@ use std::option;
 use std::fmt;
 use std::result;
 use std::string;
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum SExpType {
     Identifier(String),
     Exp(Vec<SExpType>)
