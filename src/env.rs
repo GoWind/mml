@@ -9,32 +9,13 @@ use std::rc::Rc;
 pub enum IType {
     Atom(String),
     Function,
-    List(Vec<IType>),
+    List(Vec<Rc<IType>>),
     QuotedList(ast::SExpType),
     True,
     False,
     Nil
 }
 
-// use this for quote
-pub fn ast_to_list(ast: &ast::SExpType) -> IType {
-    match ast {
-        &ast::SExpType::Identifier(ref name) => {IType::Atom(name.clone())}
-        &ast::SExpType::Exp(ref v) => { let mut iv = Vec::new();
-                                        for j in v {
-                                            iv.push(ast_to_list(&j));
-                                        }
-                                        IType::List(iv)
-                                     }
-
-    }
-}
-
-
-pub fn create_env() -> HashMap<String, IType> {
-    let mut k =  HashMap::new();
-    k
-}
 
 
 pub fn is_symbol(exp: &ast::SExpType) -> bool {
@@ -57,7 +38,7 @@ pub fn truthy(st: &String) -> bool {
 pub fn is_nil(st: &String) -> bool {
     match st.as_ref() {
         "Nil" => {true}
-        _ => {false}
+        _     =>  {false}
     }
 }
 
@@ -101,20 +82,16 @@ pub fn get_first_term(exp: &ast::SExpType) -> String {
     }
 }
 
-pub fn eval<'a>(env: &'a mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) -> Result<Rc<IType>, &'static str> {
+pub fn eval(env: &mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) -> Result<Rc<IType>, &'static str> {
     match *exp {
         ast::SExpType::Identifier(ref name) => {
             if is_atom(name) {
-                if env.contains_key(name) {
-                    Ok(env.get(name).unwrap().clone())
-                } else {
-                    env.insert(name.clone(), Rc::new(IType::Atom(name.clone())));
-                    Ok(env.get(name).unwrap().clone())
-                }
+                Ok(Rc::new(IType::Atom(name.to_string())))
             } else {
                 // see if the variable is define
                 if env.contains_key(name) {
-                    Ok(Rc::clone(env.get(name).unwrap()))
+                    let val = env.get(name).unwrap();
+                    Ok(Rc::clone(&val))
                 } else {
                     Err("undefined variable")
                 }
@@ -139,11 +116,7 @@ pub fn eval<'a>(env: &'a mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) ->
                                 Ok(ref i) =>  {
                                                   let list = eval(env, &n[2]);
                                                   match list {
-                                                     Ok(ref l) => {  let mut cons_list = Vec::new();
-                                                                     cons_list.push(i);
-                                                                     cons_list.push(l);
-                                                                     Ok(Rc::new(IType::List(vec![*i, l])))
-                                                                  }
+                                                     Ok(ref l) => {Ok(Rc::new(IType::List(vec![Rc::clone(i), Rc::clone(l)])))}
                                                     Err(k) => { Err(k) }
                                                  }
                                               }
@@ -152,8 +125,25 @@ pub fn eval<'a>(env: &'a mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) ->
                         }
                       } // end of cons interpretation
 
-            "list"   => {Err("list not implemented yet")}
-            _ => {Err("not implemented yet")}
+            "list"   => {  Err("list not implemented yet")}
+            "define" => { if n.len() != 3 {
+                            return Err("invalid number  of arguments passed to define");
+                          }
+                          if !is_symbol(&n[1]) {
+                            Err("variable name not a symbol")
+                          } else {
+                            let var = &n[1];
+                            let val = eval(env, &n[2]);
+                            match val {
+                                Ok(ref k) => { 
+                                               env.insert(var.to_string(), Rc::clone(k));
+                                               Ok(Rc::clone(k))}
+                                Err(s)    => Err(s)
+                            }
+                          }
+            }
+                            
+            _        => {Err("not implemented yet")}
         }
         }
     }
@@ -188,7 +178,9 @@ mod tests {
         let tok_stream_3 = tokenizer::parse_string(&"(define a :b)".to_string());
         let ast3 = ast::stream_to_ast(&tok_stream_3).unwrap();
         let v = env::eval(&mut env, &ast3);
-        assert_eq!(Rc::try_unwrap(v.unwrap()), Ok(env::IType::Nil));
+        assert_eq!(v.is_ok(), true);
+        let ret_val = v.ok();
+        assert_eq!(*ret_val.unwrap(), env::IType::Atom(":b".to_string()));
         let tok_stream_4 = tokenizer::parse_string(&"a".to_string());
         let ast4 = ast::stream_to_ast(&tok_stream_4).unwrap();
         let v = env::eval(&mut env, &ast4);
