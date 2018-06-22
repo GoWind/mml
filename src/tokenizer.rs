@@ -1,5 +1,3 @@
-use std::char;
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum TokenType {
 	o_brace,
