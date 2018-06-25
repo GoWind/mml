@@ -1,9 +1,10 @@
 use ast;
 use tokenizer;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::option;
 use std::result;
 use std::rc::Rc;
+
 
 #[derive(Debug, PartialEq)]
 pub enum IType {
@@ -14,6 +15,12 @@ pub enum IType {
     True,
     False,
     Nil
+}
+
+const KEYWORDS: [&'static str; 13] = ["False", "True", "Nil", "quote", "car", "cdr", "cons", "equal",
+                          "atom", "cond", "label", "lambda", "defun"];
+lazy_static! {
+    static ref KEYWORD_SET: Vec<String>  = KEYWORDS.iter().clone().map(|x| x.to_string()).collect();
 }
 
 
@@ -43,8 +50,9 @@ pub fn is_nil(st: &String) -> bool {
 }
 
 pub fn is_atom(exp: &String) -> bool {
-    exp.char_indices().count() > 1 && exp.chars().next() == Some(':')
+    !KEYWORD_SET.contains(exp)
 }
+
 
 pub fn is_quote(exp : &ast::SExpType) -> bool {
     get_first_term(exp) == "quote"

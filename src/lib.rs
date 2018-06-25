@@ -1,4 +1,7 @@
 
+#[macro_use]
+extern crate lazy_static;
+
 mod tokenizer;
 mod ast;
 mod env;
