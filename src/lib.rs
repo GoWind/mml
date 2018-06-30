@@ -5,6 +5,7 @@ extern crate lazy_static;
 mod tokenizer;
 mod ast;
 mod env;
+mod realtests;
 #[cfg(test)]
 mod tests {
     #[test]
@@ -50,7 +51,7 @@ mod tests {
     }
 
     #[test]
-    fn test_env() {
+    fn test_env_from_lib() {
         use super::ast;
         use super::tokenizer;
         use super::env;
