@@ -17,17 +17,25 @@ pub enum IType {
     Nil
 }
 
-const KEYWORDS: [&'static str; 13] = ["False", "True", "Nil", "quote", "car", "cdr", "cons", "equal",
+const KEYWORDS: [&'static str; 13] = ["false", "true", "nil", "quote", "car", "cdr", "cons", "equal",
                           "atom", "cond", "label", "lambda", "defun"];
 lazy_static! {
     static ref KEYWORD_SET: Vec<String>  = KEYWORDS.iter().clone().map(|x| x.to_string()).collect();
 }
 
 
+fn is_keyword(k: &String) -> bool {
+    KEYWORD_SET.contains(k)
+}
 
+
+pub fn make_env() -> HashMap<String, Rc<IType>> {
+    let v = HashMap::new();
+    v
+}
 pub fn is_symbol(exp: &ast::SExpType) -> bool {
     match exp {
-        &ast::SExpType::Identifier(ref n) => { !is_atom(n)}
+        &ast::SExpType::Identifier(ref n) => { !is_keyword(n)}
         _ => {false}
     }
 }
@@ -93,17 +101,24 @@ pub fn get_first_term(exp: &ast::SExpType) -> String {
 pub fn eval(env: &mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) -> Result<Rc<IType>, &'static str> {
     match *exp {
         ast::SExpType::Identifier(ref name) => {
-            if is_atom(name) {
-                Ok(Rc::new(IType::Atom(name.to_string())))
-            } else {
-                // see if the variable is define
-                if env.contains_key(name) {
-                    let val = env.get(name).unwrap();
-                    Ok(Rc::clone(&val))
-                } else {
-                    Err("undefined variable")
-                }
-            }
+            // if name is True, False or Nil, return that
+            // if it is a variable, return the value of the variable
+            // else if name is not a keyword, return Atom(name
+            // return error other wise
+            let v = if is_keyword(name) {
+                        match name.as_str() {
+                                "true"  => {Ok(Rc::new(IType::True))}
+                                "false" => {Ok(Rc::new(IType::False))}
+                                "nil"   => {Ok(Rc::new(IType::Nil))}
+                                _       => {Err("cannot eval keyword")}
+                        }
+                    } else if env.contains_key(name) {
+                        let val = env.get(name).unwrap();
+                        Ok(Rc::clone(&val))
+                    } else {
+                        Ok(Rc::new(IType::Atom(name.to_string())))
+                    };
+            return v;
         }
         ast::SExpType::Exp(ref n) => { 
             match get_first_term(&n[0]).as_ref()  {
