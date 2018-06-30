@@ -33,7 +33,7 @@ mod realtests {
         assert_eq!(true, env::truthy(&String::from("True")));
         assert_eq!(true, env::truthy(&String::from("False")));
         assert_eq!(false, env::truthy(&String::from("Frue")));
-        let tok_stream_3 = tokenizer::parse_string(&"(define a :b)".to_string());
+        let tok_stream_3 = tokenizer::parse_string(&"(label a :b)".to_string());
         let ast3 = ast::stream_to_ast(&tok_stream_3).unwrap();
         let v = env::eval(&mut env, &ast3);
         assert_eq!(v.is_ok(), true);

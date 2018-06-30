@@ -55,14 +55,14 @@ mod tests {
         use super::ast;
         use super::tokenizer;
         use super::env;
-        let define_form = tokenizer::parse_string(&"(define a nil)".to_string());
-        let m  = ast::stream_to_ast(&define_form);
+        let label_form = tokenizer::parse_string(&"(label a nil)".to_string());
+        let m  = ast::stream_to_ast(&label_form);
         assert_eq!(m.is_ok(), true);
         let empty_form  = tokenizer::parse_string(&"".to_string());
         let empty_m = ast::stream_to_ast(&empty_form);
         assert_eq!(empty_m.is_err(), true);
-        let define_bad_form = tokenizer::parse_string(&"(define a ())".to_string());
-        let mb = ast::stream_to_ast(&define_bad_form);
+        let label_bad_form = tokenizer::parse_string(&"(label a ())".to_string());
+        let mb = ast::stream_to_ast(&label_bad_form);
         assert_eq!(mb.is_err(), true);
         let p = m.unwrap();
         assert_eq!(env::is_car(&p), false);

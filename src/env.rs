@@ -149,8 +149,8 @@ pub fn eval(env: &mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) -> Result
                       } // end of cons interpretation
 
             "list"   => {  Err("list not implemented yet")}
-            "define" => { if n.len() != 3 {
-                            return Err("invalid number  of arguments passed to define");
+            "label" => { if n.len() != 3 {
+                            return Err("invalid number  of arguments passed to label");
                           }
                           if !is_symbol(&n[1]) {
                             Err("variable name not a symbol")
