@@ -1,4 +1,4 @@
-A micromanual of lisp implementation in Rust
+# A micromanual of lisp implementation in Rust
 
 This is an attempt by me to learn two things at the same time
 
@@ -14,4 +14,11 @@ The eval function is implemented in env.rs.
 Tokenizer.rs implements the tokenization to convert from string -> tokens
 ast.rs takes the token stream and then parses them into s-expressions that are then fed into the eval function
 
+## Tests
+
+I have some unit tests for testing my tokenizer, parser and eval. Do a `cargo test` to run the tests if you 
+are making any changes to the repo
+
 TODO: write a main module with a repl for playing around with the interpreter
+
+
