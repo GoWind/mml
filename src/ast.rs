@@ -31,24 +31,22 @@ pub fn make_ast(tokenv: &Vec<tokenizer::TokenType>, sindex: &mut usize) -> Resul
     if tokenv.len() == 0 {
         Err("token stream is empty")
     } else {
-        let mut current_index = *sindex;
         let mut k: Vec<SExpType>  = Vec::new();
         let mut parsing_sexp  = false;
         let mut exp_parsed = false;
         let mut found_exp = false;
         let mut identifier_only  = Ok(SExpType::Identifier("".to_string()));;
         let mut exp_vec = Vec::new();
-        if current_index == tokenv.len() {
+        if *sindex == tokenv.len() {
             Err("reached end of stream")
         } else {
-
-            while current_index < tokenv.len() {
-                match &tokenv[current_index] {	
+            while *sindex < tokenv.len() {
+                match &tokenv[*sindex] {	
                     &tokenizer::TokenType::o_brace => { if !parsing_sexp {
                         parsing_sexp = true;
                         found_exp = true;
                     } else {
-                        let  m = make_ast(tokenv, &mut current_index);
+                        let  m = make_ast(tokenv, sindex);
                         match m {
                             Ok(sub_exp) => {
                                 exp_vec.push(sub_exp);
@@ -58,11 +56,12 @@ pub fn make_ast(tokenv: &Vec<tokenizer::TokenType>, sindex: &mut usize) -> Resul
                     }
                     }
                     &tokenizer::TokenType::c_brace => { if !parsing_sexp {
-                        panic!("found a closing brace without an opening brace at index {}", current_index)
+                        panic!("found a closing brace without an opening brace at index {}", *sindex)
                     }
                     if exp_vec.is_empty() {
                         return Err("found an empty expression");
                     } else {
+                        *sindex += 1;
                         exp_parsed = true;
                         break;
                     }
@@ -78,7 +77,7 @@ pub fn make_ast(tokenv: &Vec<tokenizer::TokenType>, sindex: &mut usize) -> Resul
 
 
                 }
-                current_index += 1;
+                *sindex += 1;
             }
             if found_exp && !exp_parsed {
                 //   Err("reached end of toke nstream before parsing exp")
