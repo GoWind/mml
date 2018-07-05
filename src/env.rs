@@ -114,7 +114,7 @@ pub fn eval(env: &mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) -> Result
                         }
                     } else if env.contains_key(name) {
                         let val = env.get(name).unwrap();
-                        Ok(Rc::clone(&val))
+                        Ok(Rc::clone(val))
                     } else {
                         Ok(Rc::new(IType::Atom(name.to_string())))
                     };
@@ -148,7 +148,41 @@ pub fn eval(env: &mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) -> Result
                         }
                       } // end of cons interpretation
 
-            "list"   => {  Err("list not implemented yet")}
+            "list"   => { 
+                          if n.len() < 2 {
+                            return Err("cannot make a list without arguments");  
+                          } else {
+                            let mut m: Vec<Rc<IType>> = Vec::new();
+                            for i in &n[1..] {
+                              let item = eval(env, i);
+                              match item {
+                                Ok(g) => { m.push(g);}
+                                Err(k)    => {return Err(k);}
+                              }
+                            }
+                            return Ok(Rc::new(IType::List(m)));
+                         }
+            }
+            "car" => {
+                          if n.len() != 2 {
+                            return Err("invalid no. of arguments to car");    
+                          } else {
+                            let arg = eval(env, &n[1]);
+                            match arg {
+                              Ok(g) => {  match *g {
+                                          IType::List(ref k) => { if k.len() == 0 {
+                                                                    return Err("cannot car on empty list");
+                                                                  } else {
+                                                                    return Ok(Rc::clone(&k[0])); 
+                                                                  }
+                                                                }
+                                          _  => { return Err("argument is not a list"); }
+                                         }
+                             }
+                             Err(err_msg) => { return Err(err_msg);}
+                          }
+                       }
+            }
             "label" => { if n.len() != 3 {
                             return Err("invalid number  of arguments passed to label");
                           }
@@ -161,7 +195,7 @@ pub fn eval(env: &mut HashMap<String, Rc<IType>>, exp: &ast::SExpType) -> Result
                                 Ok(ref k) => { 
                                                env.insert(var.to_string(), Rc::clone(k));
                                                Ok(Rc::clone(k))}
-                                Err(s)    => Err(s)
+                                Err(s)    => { Err(s)}
                             }
                           }
             }
