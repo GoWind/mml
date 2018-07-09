@@ -1,24 +1,30 @@
 #[cfg(test)]
 mod realtests {
+    use ast;
     use env;
     use env::IType;
-    use ast;
-    use tokenizer;
-    use std::rc::Rc;
     use std::collections::HashMap;
+    use std::rc::Rc;
+    use tokenizer;
 
-    fn str_to_eval(k: &'static str, env: &mut HashMap<String, Rc<IType>>) -> Result<Rc<IType>, &'static str> {
+    fn str_to_eval(
+        k: &'static str,
+        env: &mut HashMap<String, Rc<IType>>,
+    ) -> Result<Rc<IType>, &'static str> {
         let tok_stream = tokenizer::parse_string(&k.to_string());
-        let ast        = ast::stream_to_ast(&tok_stream).unwrap();
+        let ast = ast::stream_to_ast(&tok_stream).unwrap();
         return env::eval(env, &ast);
     }
 
     #[test]
     fn test_env() {
         let mut env = env::make_env();
-        let t = str_to_eval("true", & mut env);
+        let t = str_to_eval("true", &mut env);
         assert_eq!(*(t.unwrap()), IType::True);
-        env.insert("a".to_string(), Rc::new(env::IType::Atom(":hohoho".to_string())));
+        env.insert(
+            "a".to_string(),
+            Rc::new(env::IType::Atom(":hohoho".to_string())),
+        );
         {
             let val = str_to_eval("a", &mut env);
             assert_eq!(val.is_ok(), true);
@@ -28,7 +34,12 @@ mod realtests {
         let val = str_to_eval("(list a b c)", &mut env);
         assert_eq!(val.is_ok(), true);
         let listdefine = str_to_eval("(label k (list a b c))", &mut env);
-        assert_eq!(listdefine.is_ok(), true, "label. definition failed due to {:?}", listdefine);
+        assert_eq!(
+            listdefine.is_ok(),
+            true,
+            "label. definition failed due to {:?}",
+            listdefine
+        );
         // lets see if we can do a car on k
         let cark = str_to_eval("(car k)", &mut env);
         assert_eq!(cark.is_ok(), true, "car failed due to {:?}", cark);
@@ -50,13 +61,16 @@ mod realtests {
         let tok_stream_4 = tokenizer::parse_string(&"a".to_string());
         let ast4 = ast::stream_to_ast(&tok_stream_4).unwrap();
         let v = env::eval(&mut env, &ast4);
-        assert_eq!(true, match v {
-                            Ok(s) => { assert_eq!(*s, IType::Atom(":b".to_string())); true}
-                            Err(g) =>{ false}
-        });
-
-
-
+        assert_eq!(
+            true,
+            match v {
+                Ok(s) => {
+                    assert_eq!(*s, IType::Atom(":b".to_string()));
+                    true
+                }
+                Err(g) => false,
+            }
+        );
     }
 
 }
