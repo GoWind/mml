@@ -22,6 +22,13 @@ impl fmt::Display for SExpType {
     }
 }
 
+pub fn is_identifier(sexp: &SExpType) -> bool {
+  match sexp {
+    SExpType::Identifier(_) => { true }
+    _  =>                      { false }
+  }
+}
+
 pub fn stream_to_ast(tokenv: &Vec<tokenizer::TokenType>) -> Result<SExpType, &'static str> {
     let mut index: usize = 0;
     make_ast(tokenv, &mut index)
@@ -71,7 +78,6 @@ pub fn make_ast(
                         if exp_vec.is_empty() {
                             return Err("found an empty expression");
                         } else {
-                            *sindex += 1;
                             exp_parsed = true;
                             break;
                         }
@@ -88,7 +94,7 @@ pub fn make_ast(
                 *sindex += 1;
             }
             if found_exp && !exp_parsed {
-                //panic!("reached end of stream before finding a closing parenthesis");
+                panic!("reached end of stream before finding a closing parenthesis");
             }
             if parsing_sexp {
                 Ok(SExpType::Exp(exp_vec))
