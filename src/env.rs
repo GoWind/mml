@@ -8,7 +8,7 @@ use tokenizer;
 #[derive(Debug, PartialEq)]
 pub enum IType {
     Atom(String),
-    Function,
+    Function(Rc<ast::SExpType>, Rc<ast::SExpType>),
     List(Vec<Rc<IType>>),
     QuotedList(ast::SExpType),
     True,
@@ -209,6 +209,32 @@ pub fn eval(
                         }
                     }
                 }
+              "lambda" => {
+                  if n.len() != 3 {
+                    println!("got arguments for lambda {:?}", n);
+                    return Err("invalid number of arguments to lambda. Expected 3");
+                  } else {
+                    let lambda_args = &n[1];  
+                    if let ast::SExpType::Exp(args) = lambda_args {
+                        //iter over all arguments and ensure that each of them is an identifier
+                        for arg in args {
+                          if !ast::is_identifier(&arg) {
+                            return Err("cannot have a non-identifier as a formal arg in lambda");
+                          } else {
+                            continue;
+                          }
+                        }
+                    } else {
+                      return  Err("lambda arguments must be a list");
+                    }
+                    let lambda_body = &n[2];
+                    if let ast::SExpType::Exp(_) = lambda_body {
+                      return Ok(Rc::new(IType::Function(Rc::new(lambda_args.clone()), Rc::new(lambda_body.clone()))));
+                    } else {
+                      return Err("lambda body must be a function");
+                    }
+                  }
+              }
 
                 _ => Err("not implemented yet"),
             }

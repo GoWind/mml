@@ -57,6 +57,27 @@ mod tests {
             ]),
             av3
         );
+        let token_vec4 = tokenizer::parse_string(&"(lambda (a) (car a))".to_string());
+        let ast_vec4 = ast::stream_to_ast(&token_vec4);
+        let av4 = ast_vec4.unwrap();
+        let lambda_str = "lambda".to_string();
+        // Doing this as I am getting the following error in rust if I  compare av4
+        // against vec![Identifier(), Exp(vec![identifier(), identifier()])],
+        let mut args_vec : Vec<ast::SExpType> = Vec::new();
+        args_vec.push(ast::SExpType::Identifier("a".to_string()));
+        let mut body_vec : Vec<ast::SExpType> = Vec::new();
+        body_vec.push(ast::SExpType::Identifier("car".to_string()));
+        body_vec.push(ast::SExpType::Identifier("a".to_string()));
+        assert_eq!(
+          ast::SExpType::Exp(vec![
+                             ast::SExpType::Identifier("lambda".to_string()),
+                             ast::SExpType::Exp(args_vec),
+                             ast::SExpType::Exp(body_vec)]),
+                                 
+          av4
+        );
+
+
     }
 
     #[test]
