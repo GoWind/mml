@@ -41,7 +41,6 @@ pub fn make_ast(
     if tokenv.len() == 0 {
         Err("token stream is empty")
     } else {
-        let mut k: Vec<SExpType> = Vec::new();
         let mut parsing_sexp = false;
         let mut exp_parsed = false;
         let mut found_exp = false;
