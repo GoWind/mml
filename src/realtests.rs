@@ -73,10 +73,11 @@ mod realtests {
         );
         let lambda_retval = str_to_eval("(lambda (a) (car a))", &mut env);
         assert_eq!(
-          true,
-          lambda_retval.is_ok(),
-          "expected lambda form to be evaled but got error {:?}",
-          lambda_retval);
+            true,
+            lambda_retval.is_ok(),
+            "expected lambda form to be evaled but got error {:?}",
+            lambda_retval
+        );
     }
 
 }

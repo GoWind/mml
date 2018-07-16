@@ -191,6 +191,36 @@ pub fn eval(
                         }
                     }
                 }
+                "cdr" => {
+                    if n.len() != 2 {
+                        return Err("invalid no. or arguments to cdr");
+                    } else {
+                        let list = eval(env, &n[1]);
+                        match list {
+                            Ok(g) => match *g {
+                                IType::List(ref k) => {
+                                    if (*k).len() < 1 {
+                                        Err("cannot cdr on empty list")
+                                    } else if (*k).len() == 1 {
+                                        return Ok(Rc::new(IType::Nil));
+                                    } else {
+                                        // create a new copy of the list excluding
+                                        // the first item, stupid I know but ok
+                                        // for a hobby implementation
+                                        let new_k = &(*k)[1..];
+                                        return Ok(Rc::new(IType::List(new_k.to_vec())));
+                                    }
+                                }
+                                _ => {
+                                    return Err("cannot cdr on list");
+                                }
+                            },
+                            Err(err_msg) => {
+                                return Err(err_msg);
+                            }
+                        }
+                    }
+                }
                 "label" => {
                     if n.len() != 3 {
                         return Err("invalid number  of arguments passed to label");
@@ -209,34 +239,42 @@ pub fn eval(
                         }
                     }
                 }
-              "lambda" => {
-                  if n.len() != 3 {
-                    println!("got arguments for lambda {:?}", n);
-                    return Err("invalid number of arguments to lambda. Expected 3");
-                  } else {
-                    let lambda_args = &n[1];  
-                    if let ast::SExpType::Exp(args) = lambda_args {
-                        //iter over all arguments and ensure that each of them is an identifier
-                        for arg in args {
-                          if !ast::is_identifier(&arg) {
-                            return Err("cannot have a non-identifier as a formal arg in lambda");
-                          } else {
-                            continue;
-                          }
+                "lambda" => {
+                    if n.len() != 3 {
+                        println!("got arguments for lambda {:?}", n);
+                        return Err("invalid number of arguments to lambda. Expected 3");
+                    } else {
+                        let lambda_args = &n[1];
+                        if let ast::SExpType::Exp(args) = lambda_args {
+                            //iter over all arguments and ensure that each of them is an identifier
+                            for arg in args {
+                                if !ast::is_identifier(&arg) {
+                                    return Err(
+                                        "cannot have a non-identifier as a formal arg in lambda",
+                                    );
+                                } else {
+                                    continue;
+                                }
+                            }
+                        } else {
+                            return Err("lambda arguments must be a list");
                         }
-                    } else {
-                      return  Err("lambda arguments must be a list");
+                        let lambda_body = &n[2];
+                        if let ast::SExpType::Exp(_) = lambda_body {
+                            return Ok(Rc::new(IType::Function(
+                                Rc::new(lambda_args.clone()),
+                                Rc::new(lambda_body.clone()),
+                            )));
+                        } else {
+                            return Err("lambda body must be a function");
+                        }
                     }
-                    let lambda_body = &n[2];
-                    if let ast::SExpType::Exp(_) = lambda_body {
-                      return Ok(Rc::new(IType::Function(Rc::new(lambda_args.clone()), Rc::new(lambda_body.clone()))));
-                    } else {
-                      return Err("lambda body must be a function");
-                    }
-                  }
-              }
-
-                _ => Err("not implemented yet"),
+                }
+              // it could be fn application
+              _ => {
+                    return Err("not implemented yet");
+                
+                }
             }
         }
     }

@@ -23,10 +23,10 @@ impl fmt::Display for SExpType {
 }
 
 pub fn is_identifier(sexp: &SExpType) -> bool {
-  match sexp {
-    SExpType::Identifier(_) => { true }
-    _  =>                      { false }
-  }
+    match sexp {
+        SExpType::Identifier(_) => true,
+        _ => false,
+    }
 }
 
 pub fn stream_to_ast(tokenv: &Vec<tokenizer::TokenType>) -> Result<SExpType, &'static str> {
