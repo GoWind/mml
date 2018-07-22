@@ -1,10 +1,46 @@
 use std::fmt;
 use std::result;
+use std::option;
 use tokenizer;
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum SExpType {
     Identifier(String),
     Exp(Vec<SExpType>),
+}
+
+impl SExpType {
+  pub fn get_exp(&self) -> Option<&Vec<SExpType>> {
+    match *self {
+      SExpType::Identifier(_) => None,
+      SExpType::Exp(ref sub_exp) => Some(sub_exp),
+    }
+  }
+  pub fn is_exp(&self) -> bool {
+    match *self {
+     SExpType::Identifier(_) => false,
+     SExpType::Exp(_)        => true,
+    }
+  }
+
+  pub fn is_identifier(&self) -> bool {
+    match *self {
+     SExpType::Identifier(_) => true,
+     SExpType::Exp(_)        => false,
+    }
+  }
+
+  pub fn get_identifier_name(&self) -> Option<String> {
+    match *self {
+      SExpType::Identifier(ref name) => Some(name.clone()),
+      SExpType::Exp(_) => None,
+    }
+  }
+  pub fn len(&self) -> Option<usize> {
+    match *self {
+      SExpType::Identifier(_) => None,
+      SExpType::Exp(ref sub_exp_vec) => Some(sub_exp_vec.len()),
+    }
+  }
 }
 
 impl fmt::Display for SExpType {
