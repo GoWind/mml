@@ -262,7 +262,6 @@ pub fn eval(
                 }
                 "lambda" => {
                     if n.len() != 3 {
-                        println!("got arguments for lambda {:?}", n);
                         return Err("invalid number of arguments to lambda. Expected 3");
                     } else {
                         let lambda_args = &n[1];
@@ -296,21 +295,22 @@ pub fn eval(
               _ => {
                      let func = eval(env, &n[0])?;
                      match *func {
-                       IType::Function(ref formal_args, ref body, ref arity) => {
+                       IType::Function(ref formal_args_list, ref body, ref arity) => {
                          //evaluate the arguments
                          if n.len() -1 != *arity {
                            return Err("incorrect no. of args to fn");
                          }
+                         let formal_args = formal_args_list.get_exp().unwrap();
+
                          let mut substitute_map : HashMap<String, String> = HashMap::new();
-                         for (idx,arg) in n[1..].iter().enumerate() {
-                           let evaluated_arg = eval(env, &arg)?;
-                           let name = arg.get_identifier_name().unwrap().to_string();
-                           let actual_arg_name = format!("formal{}{}",idx, name);
-                           substitute_map.insert(name.to_string(), actual_arg_name.clone());
-                           env.insert(actual_arg_name, evaluated_arg);
+                         for (idx,arg) in formal_args.iter().enumerate() {
+                           let evaluated_arg_value = eval(env, &n[idx+1])?;
+                           //replace formal_args with arg from lambda application
+                           let actual_arg_name = format!("formal{}{}",idx, arg.get_identifier_name().unwrap());
+                           substitute_map.insert(arg.get_identifier_name().unwrap(), actual_arg_name.clone());
+                           env.insert(actual_arg_name, evaluated_arg_value);
                          }
                          let substituted_body = substitute(&body, &substitute_map); 
-                         println!("{:?}", substituted_body);
                          if substituted_body.is_err() {
                           return Err("cannot do a lambdada");
                          }else {
