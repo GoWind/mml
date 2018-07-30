@@ -1,5 +1,6 @@
 use ast;
 use std::collections::{HashMap, HashSet};
+use std::fmt;
 use std::option;
 use std::rc::Rc;
 use std::result;
@@ -16,13 +17,33 @@ pub enum IType {
     Nil,
 }
 
-impl IType {
-  pub fn get_fn(&self) -> Option<&IType> {
-    match *self {
-      IType::Function(_, _, _) => Some(self),
-      _  => None,
+impl fmt::Display for IType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            IType::Atom(ref s) => write!(f, "{}", s),
+            IType::True => write!(f, "True"),
+            IType::False => write!(f, "False"),
+            IType::Nil => write!(f, "Nil"),
+            IType::List(ref v) => {
+                write!(f, "(");
+                for i in v {
+                    write!(f, " {}", i);
+                }
+                write!(f, ")")
+            }
+            IType::QuotedList(ref k) => write!(f, "{:?}", k),
+            IType::Function(_, _, _) => write!(f, "function at {}", self),
+        }
     }
-  }
+}
+
+impl IType {
+    pub fn get_fn(&self) -> Option<&IType> {
+        match *self {
+            IType::Function(_, _, _) => Some(self),
+            _ => None,
+        }
+    }
 }
 
 const KEYWORDS: [&'static str; 13] = [
@@ -38,10 +59,10 @@ fn is_keyword(k: &String) -> bool {
 }
 
 fn is_fn(f: &IType) -> bool {
-  match f {
-    IType::Function(_, _, _) => true,
-    _ => false,
-  }
+    match f {
+        IType::Function(_, _, _) => true,
+        _ => false,
+    }
 }
 
 pub fn make_env() -> HashMap<String, Rc<IType>> {
@@ -74,34 +95,36 @@ pub fn is_atom(exp: &String) -> bool {
     !KEYWORD_SET.contains(exp)
 }
 
+fn substitute(
+    body: &ast::SExpType,
+    substitute_map: &HashMap<String, String>,
+) -> Result<ast::SExpType, String> {
+    let some_k = body.get_exp(); // return Vec<SExpType>
+    if some_k.is_none() {
+        return Err("cannot substitute on type Identifier".to_string());
+    } else {
+        let k = some_k.unwrap();
+        let mut new_sub_exp: Vec<ast::SExpType> = Vec::new();
 
-
-fn substitute(body: &ast::SExpType, substitute_map: &HashMap<String, String>) ->Result<ast::SExpType, String>{
-  let some_k = body.get_exp(); // return Vec<SExpType>
-  if some_k.is_none() {
-    return Err("cannot substitute on type Identifier".to_string());
-  } else {
-    let k = some_k.unwrap();
-    let mut new_sub_exp : Vec<ast::SExpType> = Vec::new();
-
-    for sub_exp in k {
-        if sub_exp.is_identifier() {
-          let ident_name = sub_exp.get_identifier_name().unwrap();
-          if substitute_map.contains_key(&ident_name) {
-            let replacement = ast::SExpType::Identifier(substitute_map.get(&ident_name).unwrap().to_string());
-            new_sub_exp.push(replacement);
-          } else {
-            new_sub_exp.push(sub_exp.clone());
-          }
-        } else {
-          let replaced_sub_exp = substitute(&sub_exp, substitute_map)?;
-          new_sub_exp.push(replaced_sub_exp);
+        for sub_exp in k {
+            if sub_exp.is_identifier() {
+                let ident_name = sub_exp.get_identifier_name().unwrap();
+                if substitute_map.contains_key(&ident_name) {
+                    let replacement = ast::SExpType::Identifier(
+                        substitute_map.get(&ident_name).unwrap().to_string(),
+                    );
+                    new_sub_exp.push(replacement);
+                } else {
+                    new_sub_exp.push(sub_exp.clone());
+                }
+            } else {
+                let replaced_sub_exp = substitute(&sub_exp, substitute_map)?;
+                new_sub_exp.push(replaced_sub_exp);
+            }
         }
+        return Ok(ast::SExpType::Exp(new_sub_exp));
     }
-    return Ok(ast::SExpType::Exp(new_sub_exp));
-  }
 }
-
 
 pub fn get_first_term(exp: &ast::SExpType) -> String {
     match *exp {
@@ -291,38 +314,46 @@ pub fn eval(
                         }
                     }
                 }
-              // it could be fn application
-              _ => {
-                     let func = eval(env, &n[0])?;
-                     match *func {
-                       IType::Function(ref formal_args_list, ref body, ref arity) => {
-                         //evaluate the arguments
-                         if n.len() -1 != *arity {
-                           return Err("incorrect no. of args to fn");
-                         }
-                         let formal_args = formal_args_list.get_exp().unwrap();
+                // it could be fn application
+                _ => {
+                    let func = eval(env, &n[0])?;
+                    match *func {
+                        IType::Function(ref formal_args_list, ref body, ref arity) => {
+                            //evaluate the arguments
+                            if n.len() - 1 != *arity {
+                                return Err("incorrect no. of args to fn");
+                            }
+                            let formal_args = formal_args_list.get_exp().unwrap();
 
-                         let mut substitute_map : HashMap<String, String> = HashMap::new();
-                         for (idx,arg) in formal_args.iter().enumerate() {
-                           let evaluated_arg_value = eval(env, &n[idx+1])?;
-                           //replace formal_args with arg from lambda application
-                           let actual_arg_name = format!("formal{}{}",idx, arg.get_identifier_name().unwrap());
-                           substitute_map.insert(arg.get_identifier_name().unwrap(), actual_arg_name.clone());
-                           env.insert(actual_arg_name, evaluated_arg_value);
-                         }
-                         let substituted_body = substitute(&body, &substitute_map); 
-                         if substituted_body.is_err() {
-                          return Err("cannot do a lambdada");
-                         }else {
-                           let value = eval(env, &substituted_body.unwrap());
-                           return value;
-                         }
-
-                     }
-                     _ => { return Err("cannot apply non-function");}
-                     }
-              }
+                            let mut substitute_map: HashMap<
+                                String,
+                                String,
+                            > = HashMap::new();
+                            for (idx, arg) in formal_args.iter().enumerate() {
+                                let evaluated_arg_value = eval(env, &n[idx + 1])?;
+                                //replace formal_args with arg from lambda application
+                                let actual_arg_name =
+                                    format!("formal{}{}", idx, arg.get_identifier_name().unwrap());
+                                substitute_map.insert(
+                                    arg.get_identifier_name().unwrap(),
+                                    actual_arg_name.clone(),
+                                );
+                                env.insert(actual_arg_name, evaluated_arg_value);
+                            }
+                            let substituted_body = substitute(&body, &substitute_map);
+                            if substituted_body.is_err() {
+                                return Err("cannot do a lambdada");
+                            } else {
+                                let value = eval(env, &substituted_body.unwrap());
+                                return value;
+                            }
+                        }
+                        _ => {
+                            return Err("cannot apply non-function");
+                        }
+                    }
+                }
+            }
         }
     }
-}
 }
