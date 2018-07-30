@@ -92,10 +92,5 @@ mod tests {
         let label_bad_form = tokenizer::parse_string(&"(label a ())".to_string());
         let mb = ast::stream_to_ast(&label_bad_form);
         assert_eq!(mb.is_err(), true);
-        let p = m.unwrap();
-        assert_eq!(env::is_car(&p), false);
-        let lambda_form = tokenizer::parse_string(&"(lambda (k x) (+ k x))".to_string());
-        let g = ast::stream_to_ast(&lambda_form).unwrap();
-        assert_eq!(env::is_lambda(&g), true);
     }
 }

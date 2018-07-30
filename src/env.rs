@@ -1,4 +1,5 @@
 use ast;
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::option;
@@ -9,7 +10,12 @@ use tokenizer;
 #[derive(Debug, PartialEq)]
 pub enum IType {
     Atom(String),
-    Function(Rc<ast::SExpType>, Rc<ast::SExpType>, usize),
+    Function(
+        Rc<ast::SExpType>,
+        Rc<ast::SExpType>,
+        usize,
+        RefCell<HashMap<String, Rc<IType>>>,
+    ),
     List(Vec<Rc<IType>>),
     QuotedList(ast::SExpType),
     True,
@@ -32,7 +38,7 @@ impl fmt::Display for IType {
                 write!(f, ")")
             }
             IType::QuotedList(ref k) => write!(f, "{:?}", k),
-            IType::Function(_, _, _) => write!(f, "function at {}", self),
+            IType::Function(_, _, _, closure) => write!(f, "function at {:p}\n", self),
         }
     }
 }
@@ -40,14 +46,14 @@ impl fmt::Display for IType {
 impl IType {
     pub fn get_fn(&self) -> Option<&IType> {
         match *self {
-            IType::Function(_, _, _) => Some(self),
+            IType::Function(_, _, _, _) => Some(self),
             _ => None,
         }
     }
 }
 
 const KEYWORDS: [&'static str; 13] = [
-    "false", "true", "nil", "quote", "car", "cdr", "cons", "equal", "atom", "cond", "label",
+    "false", "true", "nil", "quote", "car", "cdr", "cons", "atom", "equal", "cond", "label",
     "lambda", "defun",
 ];
 lazy_static! {
@@ -60,7 +66,7 @@ fn is_keyword(k: &String) -> bool {
 
 fn is_fn(f: &IType) -> bool {
     match f {
-        IType::Function(_, _, _) => true,
+        IType::Function(_, _, _, _) => true,
         _ => false,
     }
 }
@@ -88,6 +94,14 @@ pub fn is_nil(st: &String) -> bool {
     match st.as_ref() {
         "Nil" => true,
         _ => false,
+    }
+}
+
+pub fn is_atom_type(st: &String) -> bool {
+    if st.len() < 1 {
+        false
+    } else {
+        st.chars().next() == Some(':')
     }
 }
 
@@ -156,13 +170,25 @@ pub fn eval(
             } else if env.contains_key(name) {
                 let val = env.get(name).unwrap();
                 Ok(Rc::clone(val))
+            } else if is_atom_type(name) {
+                Ok(Rc::new(IType::Atom(name.clone())))
             } else {
-                Ok(Rc::new(IType::Atom(name.to_string())))
+                Err("undefined value")
             };
             return v;
         }
         ast::SExpType::Exp(ref n) => {
             match get_first_term(&n[0]).as_ref() {
+                "atom" => {
+                    if n.len() != 2 {
+                        Err("incorrect no. of arguments to atom. should be (atom something)")
+                    } else {
+                        match n[1] {
+                            ast::SExpType::Identifier(ref atom_name) => Ok(Rc::new(IType::True)),
+                            _ => Ok(Rc::new(IType::False)),
+                        }
+                    }
+                }
                 "quote" => {
                     if n.len() != 2 {
                         Err("incorrect number of arguments to quote. should be (quote sexp)")
@@ -182,7 +208,16 @@ pub fn eval(
                                 let list = eval(env, &n[2]);
                                 match list {
                                     Ok(ref l) => {
-                                        Ok(Rc::new(IType::List(vec![Rc::clone(i), Rc::clone(l)])))
+                                        match **l {
+                                            IType::List(ref list_arg) => {
+                                                let mut new_vec = Vec::new();
+                                                new_vec.push(Rc::clone(i));
+                                                new_vec.extend(list_arg.iter().cloned());
+                                                Ok(Rc::new(IType::List(new_vec)))
+                                            }
+                                            _ => Err("cannot cons item on a non-list"),
+                                        }
+                                        //Ok(Rc::new(IType::List(vec![Rc::clone(i), Rc::clone(l)])))
                                     }
                                     Err(k) => Err(k),
                                 }
@@ -308,6 +343,7 @@ pub fn eval(
                                 Rc::new(lambda_args.clone()),
                                 Rc::new(lambda_body.clone()),
                                 lambda_args.len().unwrap(),
+                                RefCell::new(env.clone()),
                             )));
                         } else {
                             return Err("lambda body must be a function");
@@ -318,7 +354,12 @@ pub fn eval(
                 _ => {
                     let func = eval(env, &n[0])?;
                     match *func {
-                        IType::Function(ref formal_args_list, ref body, ref arity) => {
+                        IType::Function(
+                            ref formal_args_list,
+                            ref body,
+                            ref arity,
+                            ref captured_env,
+                        ) => {
                             //evaluate the arguments
                             if n.len() - 1 != *arity {
                                 return Err("incorrect no. of args to fn");
@@ -329,24 +370,18 @@ pub fn eval(
                                 String,
                                 String,
                             > = HashMap::new();
+
+                            let mut closure_env = captured_env.borrow_mut();
                             for (idx, arg) in formal_args.iter().enumerate() {
                                 let evaluated_arg_value = eval(env, &n[idx + 1])?;
                                 //replace formal_args with arg from lambda application
-                                let actual_arg_name =
-                                    format!("formal{}{}", idx, arg.get_identifier_name().unwrap());
-                                substitute_map.insert(
+                                closure_env.insert(
                                     arg.get_identifier_name().unwrap(),
-                                    actual_arg_name.clone(),
+                                    evaluated_arg_value,
                                 );
-                                env.insert(actual_arg_name, evaluated_arg_value);
                             }
-                            let substituted_body = substitute(&body, &substitute_map);
-                            if substituted_body.is_err() {
-                                return Err("cannot do a lambdada");
-                            } else {
-                                let value = eval(env, &substituted_body.unwrap());
-                                return value;
-                            }
+                            let value = eval(&mut closure_env, body);
+                            return value;
                         }
                         _ => {
                             return Err("cannot apply non-function");
