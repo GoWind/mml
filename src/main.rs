@@ -13,9 +13,14 @@ fn main() -> io::Result<()> {
             break;
         } else {
             let tok_stream = tokenizer::parse_string(&input);
-            let ast = ast::stream_to_ast(&tok_stream).unwrap();
-            let result = env::eval(&mut lisp_env, &ast);
-            println!("{:?}", result);
+            let ast = ast::stream_to_ast(&tok_stream);
+            match ast {
+                Ok(valid_ast) => match env::eval(&mut lisp_env, &valid_ast) {
+                    Ok(k) => println!("{}", k),
+                    Err(s) => println!("{}", s),
+                },
+                Err(g) => println!("{}", g),
+            }
         }
     }
 
