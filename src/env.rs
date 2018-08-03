@@ -1,11 +1,8 @@
 use ast;
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt;
-use std::option;
 use std::rc::Rc;
-use std::result;
-use tokenizer;
 
 #[derive(Debug, PartialEq)]
 pub enum IType {
@@ -32,14 +29,14 @@ impl fmt::Display for IType {
             IType::False => write!(f, "False"),
             IType::Nil => write!(f, "Nil"),
             IType::List(ref v) => {
-                write!(f, "(");
+                drop(write!(f, "(")); //write but drop ret val of write!
                 for i in v {
-                    write!(f, " {}", i);
+                    drop(write!(f, " {}", i));
                 }
                 write!(f, ")")
             }
             IType::QuotedList(ref k) => write!(f, "{:?}", k),
-            IType::Function(_, _, _, closure) => write!(f, "function at {:p}\n", self),
+            IType::Function(_, _, _, _closure) => write!(f, "function at {:p}\n", self),
             IType::Number(n) => write!(f, "{}", n),
         }
     }
@@ -111,37 +108,6 @@ pub fn is_atom(exp: &String) -> bool {
     !KEYWORD_SET.contains(exp)
 }
 
-fn substitute(
-    body: &ast::SExpType,
-    substitute_map: &HashMap<String, String>,
-) -> Result<ast::SExpType, String> {
-    let some_k = body.get_exp(); // return Vec<SExpType>
-    if some_k.is_none() {
-        return Err("cannot substitute on type Identifier".to_string());
-    } else {
-        let k = some_k.unwrap();
-        let mut new_sub_exp: Vec<ast::SExpType> = Vec::new();
-
-        for sub_exp in k {
-            if sub_exp.is_identifier() {
-                let ident_name = sub_exp.get_identifier_name().unwrap();
-                if substitute_map.contains_key(&ident_name) {
-                    let replacement = ast::SExpType::Identifier(
-                        substitute_map.get(&ident_name).unwrap().to_string(),
-                    );
-                    new_sub_exp.push(replacement);
-                } else {
-                    new_sub_exp.push(sub_exp.clone());
-                }
-            } else {
-                let replaced_sub_exp = substitute(&sub_exp, substitute_map)?;
-                new_sub_exp.push(replaced_sub_exp);
-            }
-        }
-        return Ok(ast::SExpType::Exp(new_sub_exp));
-    }
-}
-
 pub fn get_first_term(exp: &ast::SExpType) -> String {
     match *exp {
         ast::SExpType::Exp(ref form) => match (*form)[0] {
@@ -187,7 +153,7 @@ pub fn eval(
                         Err("incorrect no. of arguments to atom. should be (atom something)")
                     } else {
                         match n[1] {
-                            ast::SExpType::Identifier(ref atom_name) => Ok(Rc::new(IType::True)),
+                            ast::SExpType::Identifier(ref _atom_name) => Ok(Rc::new(IType::True)),
                             _ => Ok(Rc::new(IType::False)),
                         }
                     }
@@ -368,12 +334,6 @@ pub fn eval(
                                 return Err("incorrect no. of args to fn");
                             }
                             let formal_args = formal_args_list.get_exp().unwrap();
-
-                            let mut substitute_map: HashMap<
-                                String,
-                                String,
-                            > = HashMap::new();
-
                             let mut closure_env = captured_env.borrow_mut();
                             for (idx, arg) in formal_args.iter().enumerate() {
                                 let evaluated_arg_value = eval(env, &n[idx + 1])?;
