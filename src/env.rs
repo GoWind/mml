@@ -9,6 +9,7 @@ use tokenizer;
 
 #[derive(Debug, PartialEq)]
 pub enum IType {
+    Number(i64),
     Atom(String),
     Function(
         Rc<ast::SExpType>,
@@ -39,6 +40,7 @@ impl fmt::Display for IType {
             }
             IType::QuotedList(ref k) => write!(f, "{:?}", k),
             IType::Function(_, _, _, closure) => write!(f, "function at {:p}\n", self),
+            IType::Number(n) => write!(f, "{}", n),
         }
     }
 }
@@ -147,6 +149,7 @@ pub fn get_first_term(exp: &ast::SExpType) -> String {
             _ => "".to_string(),
         },
         ast::SExpType::Identifier(ref n) => n.clone(),
+        ast::SExpType::Number(k) => k.to_string(),
     }
 }
 
@@ -390,5 +393,6 @@ pub fn eval(
                 }
             }
         }
+        ast::SExpType::Number(n) => Ok(Rc::new(IType::Number(n))),
     }
 }
